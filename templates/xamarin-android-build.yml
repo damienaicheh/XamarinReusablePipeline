@@ -1,0 +1,43 @@
+parameters:
+  env: 'NOT_DEFINE'
+  buildConfiguration: 'NOT_DEFINE'
+  outputDirectory: 'NOT_DEFINE'
+  keystoreFile: 'NOT_DEFINE'
+  keystorePassword: 'NOT_DEFINE'
+  keystoreAlias: 'NOT_DEFINE'
+  keyPassword: 'NOT_DEFINE'
+
+jobs:
+  - job:
+    displayName: Build ${{ parameters.env }}.
+    steps:
+        - task: NuGetToolInstaller@1
+
+        - task: NuGetCommand@2
+          inputs:
+            restoreSolution: '**/*.sln'
+
+        - task: XamarinAndroid@1
+          inputs:
+            projectFile: '**/**.csproj'
+            outputDirectory: ${{ parameters.outputDirectory }}
+            configuration: ${{ parameters.buildConfiguration }}
+        
+        - task: AndroidSigning@3
+          inputs:
+            apkFiles: '**/*.apk' 
+            apksign: true
+            apksignerKeystoreFile: ${{ parameters.keystoreFile }}
+            apksignerKeystorePassword: ${{ parameters.keystorePassword }}
+            apksignerKeystoreAlias: ${{ parameters.keystoreAlias }}
+            apksignerKeyPassword: ${{ parameters.keyPassword }}
+            apksignerArguments: --out ${{ parameters.outputDirectory }}/app.${{ parameters.env }}.release.apk
+            zipalign: true
+        
+        - task: PublishPipelineArtifact@1
+          inputs:
+            targetPath: '${{ parameters.outputDirectory}}/app.${{ parameters.env }}.release.apk'
+            artifactName: 'build_${{ parameters.env}}'
+
+
+

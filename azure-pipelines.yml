@@ -1,0 +1,56 @@
+# Xamarin.Android
+# Build a Xamarin.Android project.
+# Add steps that test, sign, and distribute an app, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/xamarin
+
+trigger:
+- master
+
+pool:
+  vmImage: 'macos-latest'
+
+variables:
+  - group: android-pipeline
+
+stages:
+  - stage: Build
+    displayName: Build stage
+    jobs:
+      - template: templates/xamarin-android-build.yml
+        parameters:
+          env: 'preproduction'
+          buildConfiguration: '$(buildConfiguration)'
+          outputDirectory: '$(outputDirectory)'
+          keystoreFile: 'pre-production.jks'
+          keystorePassword: $(keystore.preproduction.password)
+          keystoreAlias: $(key.preproduction.alias)
+          keyPassword: $(key.preproduction.password)
+
+      - template: templates/xamarin-android-build.yml
+        parameters:
+          env: 'production'
+          buildConfiguration: '$(buildConfiguration)'
+          outputDirectory: '$(outputDirectory)'
+          keystoreFile: 'production.jks'
+          keystorePassword: $(keystore.password)
+          keystoreAlias: $(key.alias)
+          keyPassword: $(key.password)
+
+  - stage: Distribute
+    displayName: Distribute stage
+    jobs:
+      - template: templates/xamarin-android-distribute.yml
+        parameters:
+          env: 'preproduction'
+          outputDirectory: '$(outputDirectory)'
+          appSlug: '$(appSlug)'
+          distributionGroupId: '$(distributionGroupId.PreProduction)'
+          
+      - template: templates/xamarin-android-distribute.yml
+        parameters:
+          env: 'production'
+          outputDirectory: '$(outputDirectory)'
+          appSlug: '$(appSlug)'
+          distributionGroupId: '$(distributionGroupId.Production)'
+
+

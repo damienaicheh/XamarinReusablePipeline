@@ -1,0 +1,37 @@
+parameters:
+  env: 'NOT_DEFINE'
+  outputDirectory: 'NOT_DEFINE'
+  appSlug: 'NOT_DEFINE'
+  distributionGroupId: 'NOT_DEFINE'
+  serverEndpoint: 'VSAC'
+
+jobs:
+  - job:
+    displayName: Distribute ${{ parameters.env }}.
+    steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: 'build_${{ parameters.env}}'
+        targetPath: ${{ parameters.outputDirectory }} 
+
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: ${{ parameters.outputDirectory }} 
+        contents: '**/app.${{ parameters.env }}.release.apk'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/${{ parameters.env }}'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: 'apks'
+        publishLocation: 'container'
+
+    - task: AppCenterDistribute@3
+      inputs:
+        serverEndpoint: ${{ parameters.serverEndpoint }}
+        appSlug: ${{ parameters.appSlug }}
+        appFile: '${{ parameters.outputDirectory }}/app.${{ parameters.env }}.release.apk'
+        releaseNotesOption: 'input'
+        releaseNotesInput: 'New version'
+        destinationType: 'groups'
+        distributionGroupId: ${{ parameters.distributionGroupId }}
